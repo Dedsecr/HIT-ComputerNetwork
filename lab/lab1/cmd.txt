@@ -1,0 +1,1 @@
+g++ lab1.cpp -o lab1.exe -fpermissive -l ws2_32 ;  .\lab1.exe 
