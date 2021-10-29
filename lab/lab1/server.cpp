@@ -64,6 +64,13 @@ void Server::start()
             continue;
         }
         printf("Recieve a connection from %s:%d\n", inet_ntoa(remoteAddr.sin_addr), remoteAddr.sin_port);
+        if (UserFilter(remoteAddr.sin_addr) != REQUEST_SUCCEEDED)
+        {
+            printf("## The user is not allowed to connect\n");
+            printf("Closing socket...\n");
+            closesocket(sClient);
+            continue;
+        }
         CreateThreadToHandleRequest(sClient);
     }
     closesocket(this->slisten);
@@ -79,8 +86,8 @@ ERROR_CODE Server::ConnectToServer(SOCKET *serverSocket, char *host)
     ERROR_CODE siteFilterResult = SiteFilter(host);
     if (siteFilterResult == CHANGE_SUCCEEDED)
         printf("Successfully redirected host to %s\n", host);
-    else if (siteFilterResult == HOST_BLOCKED)
-        return HOST_BLOCKED;
+    else if (siteFilterResult != CHANGE_FAILED)
+        return siteFilterResult;
 
     HOSTENT *hostent = gethostbyname(host);
     if (!hostent)
@@ -125,6 +132,7 @@ DWORD WINAPI Server::RequestThread(LPVOID args)
     if (ec != REQUEST_SUCCEEDED)
         return RequestFinished(socket, serverSocket, ec);
     printf("Successfully connected host %s %d\n", httpHeader->host, Cache_storage_length);
+    printf("Cache storage length is %d\n", Cache_storage_length);
     // puts("!!!!!!!!!!!!!!");
     WebCacheP cacheP = WebCache::FindCache(httpHeader);
 
@@ -137,7 +145,11 @@ DWORD WINAPI Server::RequestThread(LPVOID args)
     recvLength = recv(serverSocket, Buffer, BUFFER_MAXSIZE, 0);
     if (recvLength <= 0)
         return RequestFinished(socket, serverSocket, NO_RETURN_INFO);
+    // puts("!!!!!!!!!!!!!!");
     send(socket, Buffer, recvLength, 0);
+    // for (int i = 0; i < recvLength; i++) {
+    //     putchar(Buffer[i]);
+    // }
     return RequestFinished(socket, serverSocket, UpdateCache(cacheP, httpHeader, Buffer, recvLength));
 }
 
@@ -156,26 +168,24 @@ ERROR_CODE Server::UpdateCache(WebCacheP cacheP, HttpHeaderP httpHeader, char *B
     bool isUpdate = false;
     while (p)
     {
-        if (p[0] == 'L')
+        if (p[0] == 'D' && strlen(p) > 6)
         {
-            if (strlen(p) > 15)
+            char header[10];
+            ZeroMemory(header, sizeof(header));
+            memcpy(header, p, 5);
+            if (!(strcmp(header, "Date:")))
             {
-                char header[15];
-                ZeroMemory(header, sizeof(header));
-                memcpy(header, p, 14);
-                if (!(strcmp(header, "Last-Modified:")))
-                {
-                    memcpy(date, &p[15], strlen(p) - 15);
-                    isUpdate = true;
-                    break;
-                }
+                memcpy(date, &p[6], strlen(p) - 6);
+                isUpdate = true;
+                break;
             }
         }
         p = strtok_s(NULL, delim, &ptr);
     }
-    //如果有更新，将新的报文放到缓存里
+    // puts("!!!!!!!!!!!!!!");
     if (isUpdate)
     {
+        // puts("!!!!!!!!!!!!!!");
         if (cacheP == NULL)
         {
             cacheP = Cache_storage[Cache_storage_length % CACHE_MAXSIZE] = new WebCache();
@@ -193,19 +203,36 @@ ERROR_CODE Server::UpdateCache(WebCacheP cacheP, HttpHeaderP httpHeader, char *B
 
 ERROR_CODE Server::RequestUsingCache(WebCacheP cacheP, SOCKET socket, SOCKET serverSocket, char *Buffer, int recvLength, HttpHeaderP httpHeader)
 {
+    // print_debug_buffer(Buffer);
+    char *newBuffer = new char[BUFFER_MAXSIZE];
     // puts("@@@@@@@@@@@@@");
-    char *CacheBuffer;
-    int i = 0, length = 0, length2 = 0;
-    length = recvLength;
-    char const *ife = "If-Modified-Since: ";
-    strcat(Buffer, ife);
-    strcat(Buffer, cacheP->date);
-    length = length + strlen(ife) + strlen(cacheP->date);
+    int length = recvLength, p = 0;
+    while (true)
+    {
+        if (Buffer[p] == 'H')
+        {
+            char header[10];
+            ZeroMemory(header, sizeof(header));
+            memcpy(header, (Buffer + p), 4);
+            if (!(strcmp(header, "Host")))
+            {
+                char const *ife = "If-Modified-Since: ";
+                memcpy(newBuffer, Buffer, p);
+                // print_debug_buffer(newBuffer);
+                strcat(newBuffer, ife);
+                strcat(newBuffer, cacheP->date);
+                strcat(newBuffer, "\r\n");
+                strcat(newBuffer, Buffer + p);
+                length = length + strlen(ife) + strlen(cacheP->date) + 2;
+                break;
+            }
+        }
+        p++;
+    }
+    
+    // print_debug_buffer(newBuffer);
 
-    Buffer[length++] = '\r';
-    Buffer[length++] = '\n';
-
-    send(serverSocket, Buffer, length, 0);
+    send(serverSocket, newBuffer, length, 0);
 
     //等待目标服务器返回数据
     recvLength = recv(serverSocket, Buffer, BUFFER_MAXSIZE, 0);
@@ -214,8 +241,7 @@ ERROR_CODE Server::RequestUsingCache(WebCacheP cacheP, SOCKET socket, SOCKET ser
 
     const char *Modd = "304";
 
-    // puts(&Buffer[9]);
-    // puts("@@@@@@@@@@@@@");
+    // print_debug_buffer(Buffer);
 
     if (!memcmp(&Buffer[9], Modd, strlen(Modd)))
     {
@@ -223,7 +249,7 @@ ERROR_CODE Server::RequestUsingCache(WebCacheP cacheP, SOCKET socket, SOCKET ser
         send(socket, cacheP->buffer, cacheP->buffer_length, 0);
     }
     else
-        send(serverSocket, Buffer, recvLength, 0);
+        send(socket, Buffer, recvLength, 0);
 
     return UpdateCache(cacheP, httpHeader, Buffer, recvLength);
 }
@@ -240,12 +266,12 @@ HttpHeaderP Server::ParseHttpHeader(char *Buffer, int recvLength)
     p = strtok_s(Buffer, delim, &ptr);
     printf("%s\n", p);
     if (p[0] == 'G')
-    { //GET 方式
+    {
         memcpy(httpHeader->method, "GET", 3);
         memcpy(httpHeader->url, &p[4], strlen(p) - 13);
     }
     else if (p[0] == 'P')
-    { //POST 方式
+    {
         memcpy(httpHeader->method, "POST", 4);
         memcpy(httpHeader->url, &p[5], strlen(p) - 14);
     }
@@ -265,9 +291,7 @@ HttpHeaderP Server::ParseHttpHeader(char *Buffer, int recvLength)
                 ZeroMemory(header, sizeof(header));
                 memcpy(header, p, 6);
                 if (!strcmp(header, "Cookie"))
-                {
                     memcpy(httpHeader->cookie, &p[8], strlen(p) - 8);
-                }
             }
             break;
         default:
@@ -323,4 +347,15 @@ ERROR_CODE SiteFilter(char *host)
         }
     }
     return CHANGE_FAILED;
+}
+ERROR_CODE UserFilter(in_addr sin_addr)
+{
+    for (int i = 0; i < DISABLED_MAXSIZE; i++)
+    {
+        if (disabledUser[i] == NULL)
+            continue;
+        if (strcmp(disabledUser[i], inet_ntoa(sin_addr)) == 0)
+            return USER_BLOCKED;
+    }
+    return REQUEST_SUCCEEDED;
 }

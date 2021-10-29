@@ -8,9 +8,10 @@
 #define REQUEST_SUCCEEDED 0
 #define REQUEST_FAILED 1
 #define NO_RETURN_INFO 2
-#define HOST_BLOCKED 5
 #define CHANGE_SUCCEEDED 3
 #define CHANGE_FAILED 4
+#define HOST_BLOCKED 5
+#define USER_BLOCKED 6
 #define BUFFER_MAXSIZE 65507
 #define HTTP_PORT 80
 #define DATE_LENGTH 50
@@ -57,9 +58,10 @@ int Cache_storage_length = 0;
 typedef WebCache * WebCacheP;
 
 
-char *disabledHost[DISABLED_MAXSIZE] = {(char *)"cs.hit.edu.cn", (char *)"alibaba.com"};
+char *disabledHost[DISABLED_MAXSIZE] = {(char *)"www.qq.com"};
+// char *disabledUser[DISABLED_MAXSIZE] = {(char *)"127.0.0.1"};
 char *disabledUser[DISABLED_MAXSIZE] = {};
-char *induceSites[DISABLED_MAXSIZE] = {(char *)"sina.com.cn"};
+char *induceSites[DISABLED_MAXSIZE] = {(char *)"today.hit.edu.cn"};
 char *targetSites[DISABLED_MAXSIZE] = {(char *)"jwts.hit.edu.cn"};
 
 class Server
@@ -81,3 +83,4 @@ private:
 };
 
 ERROR_CODE SiteFilter(char *);
+ERROR_CODE UserFilter(in_addr);
