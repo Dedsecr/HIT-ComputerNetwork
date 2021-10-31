@@ -284,16 +284,6 @@ HttpHeaderP Server::ParseHttpHeader(char *Buffer, int recvLength)
         case 'H': //Host
             memcpy(httpHeader->host, &p[6], strlen(p) - 6);
             break;
-        case 'C': //Cookie
-            if (strlen(p) > 8)
-            {
-                char header[8];
-                ZeroMemory(header, sizeof(header));
-                memcpy(header, p, 6);
-                if (!strcmp(header, "Cookie"))
-                    memcpy(httpHeader->cookie, &p[8], strlen(p) - 8);
-            }
-            break;
         default:
             break;
         }

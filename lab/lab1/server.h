@@ -58,7 +58,7 @@ int Cache_storage_length = 0;
 typedef WebCache * WebCacheP;
 
 
-char *disabledHost[DISABLED_MAXSIZE] = {(char *)"www.qq.com"};
+char *disabledHost[DISABLED_MAXSIZE] = {(char *)"jwc.hit.edu.cn"};
 // char *disabledUser[DISABLED_MAXSIZE] = {(char *)"127.0.0.1"};
 char *disabledUser[DISABLED_MAXSIZE] = {};
 char *induceSites[DISABLED_MAXSIZE] = {(char *)"today.hit.edu.cn"};
