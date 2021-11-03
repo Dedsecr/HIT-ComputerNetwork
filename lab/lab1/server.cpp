@@ -6,8 +6,6 @@
 #include "server.h"
 #include <iostream>
 
-#include "debug.cpp"
-
 #pragma comment(lib, "ws2_32.lib")
 
 Server::Server(int port)
@@ -133,23 +131,16 @@ DWORD WINAPI Server::RequestThread(LPVOID args)
         return RequestFinished(socket, serverSocket, ec);
     printf("Successfully connected host %s %d\n", httpHeader->host, Cache_storage_length);
     printf("Cache storage length is %d\n", Cache_storage_length);
-    // puts("!!!!!!!!!!!!!!");
     WebCacheP cacheP = WebCache::FindCache(httpHeader);
 
-    // puts("!!!!!!!!!!!!!!");
     if (cacheP)
         return RequestFinished(socket, serverSocket, RequestUsingCache(cacheP, socket, serverSocket, Buffer, recvLength, httpHeader));
-    // puts("!!!!!!!!!!!!!!");
     send(serverSocket, Buffer, recvLength, 0);
 
     recvLength = recv(serverSocket, Buffer, BUFFER_MAXSIZE, 0);
     if (recvLength <= 0)
         return RequestFinished(socket, serverSocket, NO_RETURN_INFO);
-    // puts("!!!!!!!!!!!!!!");
     send(socket, Buffer, recvLength, 0);
-    // for (int i = 0; i < recvLength; i++) {
-    //     putchar(Buffer[i]);
-    // }
     return RequestFinished(socket, serverSocket, UpdateCache(cacheP, httpHeader, Buffer, recvLength));
 }
 
@@ -158,8 +149,6 @@ ERROR_CODE Server::UpdateCache(WebCacheP cacheP, HttpHeaderP httpHeader, char *B
     char *cacheBuffer = new char[BUFFER_MAXSIZE];
     ZeroMemory(cacheBuffer, BUFFER_MAXSIZE);
     memcpy(cacheBuffer, Buffer, BUFFER_MAXSIZE);
-    // print_debug_buffer(Buffer);
-    // print_debug_htp(httpHeader);
     const char *delim = "\r\n";
     char *ptr;
     char date[DATE_LENGTH];
@@ -182,10 +171,8 @@ ERROR_CODE Server::UpdateCache(WebCacheP cacheP, HttpHeaderP httpHeader, char *B
         }
         p = strtok_s(NULL, delim, &ptr);
     }
-    // puts("!!!!!!!!!!!!!!");
     if (isUpdate)
     {
-        // puts("!!!!!!!!!!!!!!");
         if (cacheP == NULL)
         {
             cacheP = Cache_storage[Cache_storage_length % CACHE_MAXSIZE] = new WebCache();
@@ -196,16 +183,13 @@ ERROR_CODE Server::UpdateCache(WebCacheP cacheP, HttpHeaderP httpHeader, char *B
         }
         memcpy(cacheP->buffer, Buffer, recvLength);
         memcpy(cacheP->date, date, strlen(date));
-        // print_debug_htp(cacheP->htP);
     }
     return REQUEST_SUCCEEDED;
 }
 
 ERROR_CODE Server::RequestUsingCache(WebCacheP cacheP, SOCKET socket, SOCKET serverSocket, char *Buffer, int recvLength, HttpHeaderP httpHeader)
 {
-    // print_debug_buffer(Buffer);
     char *newBuffer = new char[BUFFER_MAXSIZE];
-    // puts("@@@@@@@@@@@@@");
     int length = recvLength, p = 0;
     while (true)
     {
@@ -229,19 +213,15 @@ ERROR_CODE Server::RequestUsingCache(WebCacheP cacheP, SOCKET socket, SOCKET ser
         }
         p++;
     }
-    
-    // print_debug_buffer(newBuffer);
 
     send(serverSocket, newBuffer, length, 0);
 
-    //等待目标服务器返回数据
+    // wating data from the server socket
     recvLength = recv(serverSocket, Buffer, BUFFER_MAXSIZE, 0);
     if (recvLength <= 0)
         return NO_RETURN_INFO;
 
     const char *Modd = "304";
-
-    // print_debug_buffer(Buffer);
 
     if (!memcmp(&Buffer[9], Modd, strlen(Modd)))
     {
@@ -302,7 +282,6 @@ void Server::CreateThreadToHandleRequest(SOCKET socket)
 
 WebCacheP WebCache::FindCache(HttpHeaderP htp)
 {
-    // puts("*************************************************");
     for (int i = 0; i < CACHE_MAXSIZE; i++)
     {
         if (Cache_storage[i] == NULL)
@@ -310,10 +289,7 @@ WebCacheP WebCache::FindCache(HttpHeaderP htp)
         HttpHeaderP htp1 = Cache_storage[i]->htP, htp2 = htp;
         if (!strcmp(htp1->method, htp2->method) && !strcmp(htp1->url, htp2->url) && !strcmp(htp1->host, htp2->host))
             return Cache_storage[i];
-        // print_debug_htp(htp1);
-        // print_debug_htp(htp2);
     }
-    // puts("*************************************************");
     return NULL;
 }
 
