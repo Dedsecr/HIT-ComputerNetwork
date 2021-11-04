@@ -75,6 +75,7 @@ void Server::start()
     WSACleanup();
 }
 
+// connet to server
 ERROR_CODE Server::ConnectToServer(SOCKET *serverSocket, char *host)
 {
     sockaddr_in serverAddr;
@@ -105,6 +106,7 @@ ERROR_CODE Server::ConnectToServer(SOCKET *serverSocket, char *host)
     return REQUEST_SUCCEEDED;
 }
 
+// finish the request, printing error
 DWORD Server::RequestFinished(SOCKET socket, SOCKET serverSocket, ERROR_CODE ErrorCode)
 {
     if (ErrorCode != REQUEST_SUCCEEDED)
@@ -116,16 +118,19 @@ DWORD Server::RequestFinished(SOCKET socket, SOCKET serverSocket, ERROR_CODE Err
     return 1;
 }
 
+// main workflow
 DWORD WINAPI Server::RequestThread(LPVOID args)
 {
     SOCKET socket = *(SOCKET *)args, serverSocket;
     char Buffer[BUFFER_MAXSIZE];
     ZeroMemory(Buffer, BUFFER_MAXSIZE);
-
+    
+    // receive from client socket
     int recvLength = recv(socket, Buffer, BUFFER_MAXSIZE, 0);
 
     HttpHeaderP httpHeader = ParseHttpHeader(Buffer, recvLength);
 
+    // connect to server
     ERROR_CODE ec = ConnectToServer(&serverSocket, httpHeader->host);
     if (ec != REQUEST_SUCCEEDED)
         return RequestFinished(socket, serverSocket, ec);
@@ -133,6 +138,7 @@ DWORD WINAPI Server::RequestThread(LPVOID args)
     printf("Cache storage length is %d\n", Cache_storage_length);
     WebCacheP cacheP = WebCache::FindCache(httpHeader);
 
+    // using the cache
     if (cacheP)
         return RequestFinished(socket, serverSocket, RequestUsingCache(cacheP, socket, serverSocket, Buffer, recvLength, httpHeader));
     send(serverSocket, Buffer, recvLength, 0);
@@ -141,9 +147,12 @@ DWORD WINAPI Server::RequestThread(LPVOID args)
     if (recvLength <= 0)
         return RequestFinished(socket, serverSocket, NO_RETURN_INFO);
     send(socket, Buffer, recvLength, 0);
+
+    // update cache
     return RequestFinished(socket, serverSocket, UpdateCache(cacheP, httpHeader, Buffer, recvLength));
 }
 
+// update cache
 ERROR_CODE Server::UpdateCache(WebCacheP cacheP, HttpHeaderP httpHeader, char *Buffer, int recvLength)
 {
     char *cacheBuffer = new char[BUFFER_MAXSIZE];
@@ -155,6 +164,7 @@ ERROR_CODE Server::UpdateCache(WebCacheP cacheP, HttpHeaderP httpHeader, char *B
     ZeroMemory(date, sizeof(date));
     char *p = strtok_s(cacheBuffer, delim, &ptr);
     bool isUpdate = false;
+    // find Date in the request
     while (p)
     {
         if (p[0] == 'D' && strlen(p) > 6)
@@ -171,6 +181,7 @@ ERROR_CODE Server::UpdateCache(WebCacheP cacheP, HttpHeaderP httpHeader, char *B
         }
         p = strtok_s(NULL, delim, &ptr);
     }
+    // update cache
     if (isUpdate)
     {
         if (cacheP == NULL)
@@ -193,6 +204,7 @@ ERROR_CODE Server::RequestUsingCache(WebCacheP cacheP, SOCKET socket, SOCKET ser
     int length = recvLength, p = 0;
     while (true)
     {
+        // add 'If-Modified-Since:' to the request
         if (Buffer[p] == 'H')
         {
             char header[10];
@@ -234,6 +246,7 @@ ERROR_CODE Server::RequestUsingCache(WebCacheP cacheP, SOCKET socket, SOCKET ser
     return UpdateCache(cacheP, httpHeader, Buffer, recvLength);
 }
 
+// parse Http header
 HttpHeaderP Server::ParseHttpHeader(char *Buffer, int recvLength)
 {
     char *CacheBuffer = new char[recvLength + 1];
@@ -272,6 +285,7 @@ HttpHeaderP Server::ParseHttpHeader(char *Buffer, int recvLength)
     return httpHeader;
 }
 
+// create new threadHandle
 void Server::CreateThreadToHandleRequest(SOCKET socket)
 {
     DWORD threadID;
@@ -280,6 +294,7 @@ void Server::CreateThreadToHandleRequest(SOCKET socket)
     Sleep(200);
 }
 
+// find cache in memory
 WebCacheP WebCache::FindCache(HttpHeaderP htp)
 {
     for (int i = 0; i < CACHE_MAXSIZE; i++)
@@ -293,6 +308,7 @@ WebCacheP WebCache::FindCache(HttpHeaderP htp)
     return NULL;
 }
 
+// Site filter
 ERROR_CODE SiteFilter(char *host)
 {
     for (int i = 0; i < DISABLED_MAXSIZE; i++)
@@ -314,6 +330,8 @@ ERROR_CODE SiteFilter(char *host)
     }
     return CHANGE_FAILED;
 }
+
+// user filter
 ERROR_CODE UserFilter(in_addr sin_addr)
 {
     for (int i = 0; i < DISABLED_MAXSIZE; i++)

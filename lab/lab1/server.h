@@ -22,6 +22,7 @@ typedef uint8_t ERROR_CODE;
 
 using namespace std;
 
+// HTTP头结构
 struct HttpHeader
 {
     char method[4];
@@ -36,6 +37,7 @@ struct HttpHeader
 
 typedef HttpHeader * HttpHeaderP;
 
+// 缓存存放结构
 class WebCache
 {
 public:
@@ -57,10 +59,12 @@ int Cache_storage_length = 0;
 
 typedef WebCache * WebCacheP;
 
-
+// 网站过滤
 char *disabledHost[DISABLED_MAXSIZE] = {(char *)"jwc.hit.edu.cn"};
 // char *disabledUser[DISABLED_MAXSIZE] = {(char *)"127.0.0.1"};
+// 用户过滤
 char *disabledUser[DISABLED_MAXSIZE] = {};
+// 网站诱导
 char *induceSites[DISABLED_MAXSIZE] = {(char *)"today.hit.edu.cn"};
 char *targetSites[DISABLED_MAXSIZE] = {(char *)"jwts.hit.edu.cn"};
 
