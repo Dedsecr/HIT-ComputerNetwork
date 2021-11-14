@@ -12,12 +12,14 @@ int main()
         scanf("%d", &choice);
         if (choice == 1)
         {
+            // server
             GBN_Server *server = new GBN_Server();
             server->start();
             delete server;
         }
         else if (choice == 2)
         {
+            // client
             GBN_Client *client = new GBN_Client();
             client->start();
             delete client;

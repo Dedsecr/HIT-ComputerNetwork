@@ -1,6 +1,7 @@
 #pragma once
 #include "heads.h"
 
+// 读取数据
 char *read_data(char *file_name)
 {
     char *buffer = new char[DATA_SIZE];
@@ -16,6 +17,7 @@ char *read_data(char *file_name)
     return buffer;
 }
 
+// 生成存储文件名
 char *get_save_file_name()
 {
     char *save_file_name = new char[256];
@@ -28,6 +30,7 @@ char *get_save_file_name()
     return save_file_name;
 }
 
+// 存储数据
 void save_data(char *file_name, char *data)
 {
     FILE *file = fopen(file_name, "a");
@@ -35,6 +38,7 @@ void save_data(char *file_name, char *data)
     fclose(file);
 }
 
+// WSA初始化
 ERROR_CODE Initialize_WSA(SOCKET *s, SOCKADDR_IN *addrServer, bool server)
 {
     srand((unsigned)time(NULL));
@@ -57,9 +61,9 @@ ERROR_CODE Initialize_WSA(SOCKET *s, SOCKADDR_IN *addrServer, bool server)
 
     if (server)
     {
-        //设置套接字为非阻塞模式
-        int iMode = 1;                                    //1：非阻塞，0：阻塞
-        ioctlsocket((*s), FIONBIO, (u_long FAR *)&iMode); //非阻塞设置
+        // 设置套接字为非阻塞模式
+        int iMode = 1; // 1：非阻塞，0：阻塞
+        ioctlsocket((*s), FIONBIO, (u_long FAR *)&iMode); // 非阻塞设置
     }
 
     (*addrServer).sin_family = AF_INET;
@@ -104,9 +108,7 @@ bool lossInLossRatio(float lossRatio)
     int lossBound = (int)(lossRatio * 100);
     int r = rand() % 101;
     if (r <= lossBound)
-    {
         return true;
-    }
     return false;
 }
 

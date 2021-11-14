@@ -1,12 +1,14 @@
 #include "heads.h"
 #include "utils.cpp"
 
+// BGN客户端
 class GBN_Client
 {
 private:
     char buffer[BUFFER_SIZE];
     char *save_file_name;
 
+    // 握手阶段
     ERROR_CODE ShakeHandsStage(SOCKET socketClient, SOCKADDR_IN addrServer)
     {
         ZeroMemory(buffer, sizeof(buffer));
@@ -30,6 +32,7 @@ private:
         return STAGE_ERROR;
     }
 
+    // 数据传输阶段
     ERROR_CODE TransferDataStage(SOCKET socketClient, SOCKADDR_IN addrServer)
     {
         char data[BUFFER_SIZE];
@@ -99,8 +102,8 @@ public:
         sendto(socketClient, buffer, strlen(buffer) + 1, 0, (SOCKADDR *)&addrServer, sizeof(SOCKADDR));
         printf("Begin testing GBN protocol\n");
         printf("The loss ratio of packet is %.2f, the loss ratio of ack is %.2f\n", packetLossRatio, ackLossRatio);
-        ShakeHandsStage(socketClient, addrServer);
-        TransferDataStage(socketClient, addrServer);
+        ShakeHandsStage(socketClient, addrServer); // 握手阶段
+        TransferDataStage(socketClient, addrServer); // 数据传输阶段
         
         closesocket(socketClient);
         WSACleanup();

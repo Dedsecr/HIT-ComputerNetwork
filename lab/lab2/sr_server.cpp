@@ -12,10 +12,11 @@ private:
 
     char buffer[BUFFER_SIZE];
 
+    // 获取下一个需要发送的序列号
     int getNextSeq()
     {
         for (int i = winL; i <= winR; ++i)
-            if (ack[i % SEQ_SIZE] == NEEDTORESEND)
+            if (ack[i % SEQ_SIZE] == NEEDTORESEND) // 查看有没有需要重传的
                 return i;
         if (totalSeq - 1 == winR || winR - winL + 1 >= SEND_WIND_SIZE)
             return -2;
@@ -25,6 +26,7 @@ private:
             return -2;
     }
 
+    // 处理计时器
     void timerHandler()
     {
         for (int i = winL; i <= winR; ++i)
@@ -42,6 +44,7 @@ private:
         }
     }
 
+    // 处理Ack
     void ackHandler(char c)
     {
         int ackCounter = 0;
@@ -53,6 +56,7 @@ private:
             winL++;
     }
 
+    // 握手阶段
     ERROR_CODE ShakeHandsStage(SOCKET sockServer, SOCKADDR_IN addrClient)
     {
         int waitCount = 0;
@@ -91,6 +95,8 @@ private:
             }
         }
     }
+
+    // 挥手阶段
     ERROR_CODE FinishTransferStage(SOCKET sockServer, SOCKADDR_IN addrClient)
     {
         int waitCount = TIMEOUT_COUNT;
@@ -127,11 +133,12 @@ private:
             }
         }
     }
+
+    // 数据传输阶段
     ERROR_CODE TransferDataStage(SOCKET sockServer, SOCKADDR_IN addrClient, char *data)
     {
         while (true)
         {
-            // printf("                  %d %d %d\n", winR, winL, totalSeq);
             ZeroMemory(buffer, sizeof(buffer));
             int NextSeq = getNextSeq();
             if (NextSeq != -2)
@@ -166,6 +173,8 @@ private:
             Sleep(200);
         }
     }
+
+    // 初始化
     ERROR_CODE Initialize(SOCKET *s)
     {
         SOCKET sockServer;
@@ -222,9 +231,9 @@ public:
             printf("receive from client: %s\n", ParseCode(buffer[0]));
             if ((unsigned char)buffer[0] == BEGIN_TEST_INFO)
             {
-                ShakeHandsStage(sockServer, addrClient);
-                TransferDataStage(sockServer, addrClient, data);
-                FinishTransferStage(sockServer, addrClient);
+                ShakeHandsStage(sockServer, addrClient); // 握手阶段
+                TransferDataStage(sockServer, addrClient, data); // 数据传输阶段
+                FinishTransferStage(sockServer, addrClient); // 挥手阶段
                 break;
             }
             Sleep(200);

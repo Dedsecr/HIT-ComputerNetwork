@@ -1,16 +1,17 @@
 #include "heads.h"
 #include "utils.cpp"
 
-class SR_Client
+class SR_Client // SR客户端
 {
 private:
     char buffer[BUFFER_SIZE];
     char receive_buffer[SEQ_SIZE][BUFFER_SIZE];
     bool received[SEQ_SIZE];
-    int WinL = 0;
-    int WinR = -1;
+    int WinL = 0; // 接收窗口左端
+    int WinR = -1; // 接收窗口右端
     char *save_file_name;
 
+    // 判断当前序列号是否在接收窗口中
     bool isValidSeq(int seq)
     {
         for (int i = WinL; i <= WinR; i++)
@@ -27,6 +28,7 @@ private:
         return false;
     }
 
+    // 握手阶段
     ERROR_CODE ShakeHandsStage(SOCKET socketClient, SOCKADDR_IN addrServer)
     {
         ZeroMemory(buffer, sizeof(buffer));
@@ -50,13 +52,13 @@ private:
         return STAGE_ERROR;
     }
 
+    // 数据传输阶段
     ERROR_CODE TransferDataStage(SOCKET socketClient, SOCKADDR_IN addrServer)
     {
         char data[BUFFER_SIZE];
         ZeroMemory(buffer, sizeof(buffer));
         while (true)
         {
-            // printf("                  %d %d\n", WinL, WinR);
             ZeroMemory(data, sizeof(data));
             int recvSize = recvfrom(socketClient, buffer, BUFFER_SIZE, 0, (SOCKADDR *)&addrServer, &SOCKADDR_Length);
 
@@ -93,6 +95,7 @@ private:
                 strcpy(receive_buffer[seq], data);
                 while (received[WinL % SEQ_SIZE] && WinL <= WinR)
                 {
+                    // 存储数据
                     save_data(save_file_name, receive_buffer[WinL % SEQ_SIZE]);
                     WinL++;
                 }
@@ -125,8 +128,8 @@ public:
         sendto(socketClient, buffer, strlen(buffer) + 1, 0, (SOCKADDR *)&addrServer, sizeof(SOCKADDR));
         printf("Begin testing GBN protocol\n");
         printf("The loss ratio of packet is %.2f, the loss ratio of ack is %.2f\n", packetLossRatio, ackLossRatio);
-        ShakeHandsStage(socketClient, addrServer);
-        TransferDataStage(socketClient, addrServer);
+        ShakeHandsStage(socketClient, addrServer); // 握手阶段
+        TransferDataStage(socketClient, addrServer); // 数据传输阶段
 
         closesocket(socketClient);
         WSACleanup();

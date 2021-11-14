@@ -12,12 +12,14 @@ int main()
         scanf("%d", &choice);
         if (choice == 1)
         {
+            // server
             SR_Server *server = new SR_Server();
             server->start();
             delete server;
         }
         else if (choice == 2)
         {
+            // client
             SR_Client *client = new SR_Client();
             client->start();
             delete client;

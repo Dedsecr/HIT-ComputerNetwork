@@ -10,40 +10,36 @@
 #include <fstream>
 #include <iostream>
 
-#define REQUEST_SUCCEEDED 0
-#define REQUEST_FAILED 1
-#define INIT_FAILED 2
-#define INIT_SUCCEEDED 3
-#define STAGE_FINISHED 4
-#define STAGE_ERROR 5
-#define BUFFER_SIZE 1026 //缓冲区大小，（以太网中 UDP 的数据帧中包长度应小于 1480 字节）
+#define REQUEST_SUCCEEDED 0 // 请求成功
+#define REQUEST_FAILED 1 // 请求失败
+#define INIT_FAILED 2 // 初始化失败
+#define INIT_SUCCEEDED 3 // 初始化成功
+#define STAGE_FINISHED 4 // 阶段完成
+#define STAGE_ERROR 5 // 阶段错误
+#define BUFFER_SIZE 1026 //缓冲区大小
 #define SERVER_PORT 12340 // port
 #define TIMEOUT_COUNT 10 //超时计数
-#define SEND_WIND_SIZE 10 //发送窗口大小为 10，GBN 中应满足 W + 1 <= N（W 为发送窗口大小，N 为序列号个数）
-#define RECV_WIND_SIZE 10 //发送窗口大小为 10，GBN 中应满足 W + 1 <= N（W 为发送窗口大小，N 为序列号个数）
-#define PACK_SIZE 1024 //每个包的大小为 1024 字节
-//本例取序列号 0...19 共 20 个
-//如果将窗口大小设为 1，则为停-等协议
-#define SEQ_SIZE 20 //序列号的个数，从 0~19 共计 20 个
-//由于发送数据第一个字节如果值为 0，则数据会发送失败
-//因此接收端序列号为 1~20，与发送端一一对应
+#define SEND_WIND_SIZE 10 //发送窗口大小
+#define RECV_WIND_SIZE 10 //接收窗口大小
+#define PACK_SIZE 1024 //包大小
+#define SEQ_SIZE 20 //序列号大小
 #define DATA_SIZE (PACK_SIZE * 113)
-#define SERVER_IP "127.0.0.1" // 服务器的 IP 地址
+#define SERVER_IP "127.0.0.1"
 
-#define BEGIN_TEST_INFO 100
-#define EXIT_TEST_INFO 101
-#define GBN_REQUEST_INFO 200
-#define GBN_RESPONSE_INFO 201
-#define GBN_CONFORM_INFO 202
-#define TANSFER_FINISHED_INFO 203
-#define TRANSFER_FINISHED_ACK_INFO 204
+#define BEGIN_TEST_INFO 100 //测试开始
+#define EXIT_TEST_INFO 101 //测试结束
+#define GBN_REQUEST_INFO 200 //GBN请求
+#define GBN_RESPONSE_INFO 201 //GBN响应
+#define GBN_CONFORM_INFO 202 //GBN确认
+#define TANSFER_FINISHED_INFO 203 //传输完成
+#define TRANSFER_FINISHED_ACK_INFO 204 //传输完成确认
 
-#define SENT 10
-#define ACKED 11
-#define NEEDTORESEND 12
+#define SENT 10 //已发送
+#define ACKED 11 //已确认
+#define NEEDTORESEND 12 //需要重传
 
-float packetLossRatio = 0.2; 
-float ackLossRatio = 0.2;
+float packetLossRatio = 0.2; //丢包率
+float ackLossRatio = 0.2; //ACK丢包率
 
 typedef uint8_t ERROR_CODE;
 
