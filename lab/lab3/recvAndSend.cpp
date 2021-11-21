@@ -43,7 +43,8 @@ int stud_ip_recv(char *pBuffer, unsigned short length)
         ip_DiscardPkt(pBuffer, STUD_IP_TEST_DESTINATION_ERROR);
         return 1;
     }
-
+    
+    // checksum
     unsigned long sum = 0;
     for (int i = 0; i < head_length * 2; i++)
     {
@@ -82,6 +83,7 @@ int stud_ip_Upsend(char *pBuffer, unsigned short len, unsigned int srcAddr,
     memcpy(buffer + 12, &src, 4);
     memcpy(buffer + 16, &dst, 4);
 
+    // checksum
     unsigned long sum = 0;
     for (int i = 0; i < 20; i += 2)
     {

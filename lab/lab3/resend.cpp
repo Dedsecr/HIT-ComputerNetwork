@@ -68,6 +68,7 @@ int stud_fwd_deal(char *pBuffer, int length)
 	buffer[8] = ttl - 1;
 	memset(buffer + 10, 0, 2);
 
+	//checksum
 	unsigned long sum = 0;
 	for (int i = 0; i < head_length * 2; i++)
 	{
